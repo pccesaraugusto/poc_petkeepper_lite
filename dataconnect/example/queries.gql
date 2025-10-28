@@ -1,0 +1,38 @@
+mutation CreateUser @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  user_insert(data: {
+    id_expr: "uuidV4()"
+    createdAt_expr: "request.time"
+    displayName: "New User"
+    email: "newuser@example.com"
+  })
+}
+
+query ListSurveys @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  surveys {
+    id
+    title
+    description
+  }
+}
+
+mutation CreateResponse($surveyId: UUID!, $respondentIdentifier: String!) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  response_insert(data: {
+    surveyId: $surveyId
+    respondentIdentifier: $respondentIdentifier
+    submittedAt_expr: "request.time"
+  })
+}
+
+query GetSurvey($id: UUID!) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  survey(id: $id) {
+    id
+    title
+    description
+    questions_on_survey {
+      id
+      text
+      type
+      options
+    }
+  }
+}

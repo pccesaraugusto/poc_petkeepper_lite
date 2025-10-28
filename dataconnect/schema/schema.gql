@@ -1,0 +1,33 @@
+type User @table {
+  displayName: String!
+  email: String
+  createdAt: Timestamp!
+}
+
+type Survey @table {
+  user: User!
+  title: String!
+  description: String
+  createdAt: Timestamp!
+  publishedAt: Timestamp
+}
+
+type Question @table {
+  survey: Survey!
+  text: String!
+  type: String!
+  order: Int!
+  options: [String]
+}
+
+type Response @table {
+  survey: Survey!
+  submittedAt: Timestamp!
+  respondentIdentifier: String
+}
+
+type Answer @table {
+  response: Response!
+  question: Question!
+  value: String!
+}

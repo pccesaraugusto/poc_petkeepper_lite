@@ -1,0 +1,46 @@
+mutation CreateDemoData @transaction @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  user_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      displayName: "demouser1",
+      createdAt: "2024-04-26T10:00:00Z",
+      email: "demouser1@example.com"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      displayName: "demouser2",
+      createdAt: "2024-04-26T10:00:00Z",
+      email: "demouser2@example.com"
+    }
+  ])
+  survey_insertMany(data: [
+    {
+      id: "650e8400-e29b-41d4-a716-446655440000",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      title: "Example Survey 1",
+      createdAt: "2024-04-26T10:00:00Z"
+    },
+    {
+      id: "650e8400-e29b-41d4-a716-446655440001",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      title: "Example Survey 2",
+      createdAt: "2024-04-26T10:00:00Z"
+    }
+  ])
+  question_insertMany(data: [
+    {
+      id: "750e8400-e29b-41d4-a716-446655440000",
+      surveyId: "650e8400-e29b-41d4-a716-446655440000",
+      text: "Question 1 for Survey 1",
+      type: "text",
+      order: 1
+    },
+    {
+      id: "750e8400-e29b-41d4-a716-446655440001",
+      surveyId: "650e8400-e29b-41d4-a716-446655440001",
+      text: "Question 1 for Survey 2",
+      type: "text",
+      order: 1
+    }
+  ])
+}

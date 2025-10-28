@@ -1,0 +1,50 @@
+extend type Answer {
+  """
+  ✨ Implicit primary key field. It's a UUID column default to a generated new value. See `@table` for how to customize it.
+  """
+  id: UUID! @default(expr: "uuidV4()") @fdc_generated(from: "Answer", purpose: IMPLICIT_KEY_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Answer`.`question`. It must match the value of `Question`.`id`. See `@ref` for how to customize it.
+  """
+  questionId: UUID! @fdc_generated(from: "Answer.question", purpose: IMPLICIT_REF_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Answer`.`response`. It must match the value of `Response`.`id`. See `@ref` for how to customize it.
+  """
+  responseId: UUID! @fdc_generated(from: "Answer.response", purpose: IMPLICIT_REF_FIELD)
+}
+extend type Question {
+  """
+  ✨ Implicit primary key field. It's a UUID column default to a generated new value. See `@table` for how to customize it.
+  """
+  id: UUID! @default(expr: "uuidV4()") @fdc_generated(from: "Question", purpose: IMPLICIT_KEY_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Question`.`survey`. It must match the value of `Survey`.`id`. See `@ref` for how to customize it.
+  """
+  surveyId: UUID! @fdc_generated(from: "Question.survey", purpose: IMPLICIT_REF_FIELD)
+}
+extend type Response {
+  """
+  ✨ Implicit primary key field. It's a UUID column default to a generated new value. See `@table` for how to customize it.
+  """
+  id: UUID! @default(expr: "uuidV4()") @fdc_generated(from: "Response", purpose: IMPLICIT_KEY_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Response`.`survey`. It must match the value of `Survey`.`id`. See `@ref` for how to customize it.
+  """
+  surveyId: UUID! @fdc_generated(from: "Response.survey", purpose: IMPLICIT_REF_FIELD)
+}
+extend type Survey {
+  """
+  ✨ Implicit primary key field. It's a UUID column default to a generated new value. See `@table` for how to customize it.
+  """
+  id: UUID! @default(expr: "uuidV4()") @fdc_generated(from: "Survey", purpose: IMPLICIT_KEY_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Survey`.`user`. It must match the value of `User`.`id`. See `@ref` for how to customize it.
+  """
+  userId: UUID! @fdc_generated(from: "Survey.user", purpose: IMPLICIT_REF_FIELD)
+}
+extend type User {
+  """
+  ✨ Implicit primary key field. It's a UUID column default to a generated new value. See `@table` for how to customize it.
+  """
+  id: UUID! @default(expr: "uuidV4()") @fdc_generated(from: "User", purpose: IMPLICIT_KEY_FIELD)
+}
