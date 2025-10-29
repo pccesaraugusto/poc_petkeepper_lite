@@ -6,8 +6,8 @@ import '../models/pet_task_model.dart';
 import '../providers/pet_task_provider.dart';
 
 class AddPetTaskScreen extends ConsumerStatefulWidget {
-  final Pet pet;
-  const AddPetTaskScreen({super.key, required this.pet});
+  final Pet? pet; // Agora opcional
+  const AddPetTaskScreen({super.key, this.pet});
 
   @override
   ConsumerState<AddPetTaskScreen> createState() => _AddPetTaskScreenState();
@@ -21,6 +21,19 @@ class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
   DateTime? _dueDate;
   bool _isSubmitting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Você pode inicializar algo aqui se necessário
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _dueDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -30,14 +43,23 @@ class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
 
     setState(() => _isSubmitting = true);
 
+    Pet? petActual =
+        widget.pet ?? ModalRoute.of(context)?.settings.arguments as Pet?;
+    if (petActual == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Pet não selecionado')));
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
     final task = PetTask(
       id: '',
-      petId: widget.pet.id,
+      petId: petActual.id,
       type: _type,
       title: _titleController.text.trim(),
       dueDate: _dueDate!,
       notes: _notesController.text.trim(),
-      createdBy: 'userId', // TODO buscar do auth real
+      createdBy: 'userId', // TODO: pegar do auth real
       createdAt: DateTime.now(),
       done: false,
     );
@@ -55,16 +77,13 @@ class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
   }
 
   @override
-  void dispose() {
-    _titleController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    Pet? petActual =
+        widget.pet ?? ModalRoute.of(context)?.settings.arguments as Pet?;
+    final petName = petActual?.name ?? 'Novo Pet';
+
     return Scaffold(
-      appBar: AppBar(title: Text('Nova Tarefa para ${widget.pet.name}')),
+      appBar: AppBar(title: Text('Nova Tarefa para $petName')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -118,7 +137,7 @@ class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
                 child: _isSubmitting
                     ? const CircularProgressIndicator()
                     : const Text('Salvar'),
-              )
+              ),
             ],
           ),
         ),

@@ -46,12 +46,18 @@ class HomeScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.task_alt),
               title: const Text('Pet Tasks'),
-              onTap: () => navigateTo('/add_pet_task', arguments: examplePet),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed('/pet_tasks');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.pets),
               title: const Text('Pets'),
-              onTap: () => navigateTo('/add_pet'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed('/pets');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.person),

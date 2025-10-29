@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/user_model.dart';
 import '../providers/user_provider.dart';
 
 class UserFormScreen extends ConsumerStatefulWidget {
-  final UserModel? user;
-
-  const UserFormScreen({super.key, this.user});
+  const UserFormScreen({super.key});
 
   @override
   ConsumerState<UserFormScreen> createState() => _UserFormScreenState();
@@ -14,55 +11,51 @@ class UserFormScreen extends ConsumerStatefulWidget {
 
 class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _emailController;
+  final _displayNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _familyCodeController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.user?.name ?? '');
-    _emailController = TextEditingController(text: widget.user?.email ?? '');
-  }
+  bool _isSaving = false;
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  void _save() {
+  Future<void> _saveUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
+    setState(() => _isSaving = true);
 
-    if (widget.user == null) {
-      ref.read(userListProvider.notifier).addUser(name, email);
-    } else {
-      ref
-          .read(userListProvider.notifier)
-          .updateUser(widget.user!.id, name, email);
+    try {
+      final displayName = _displayNameController.text.trim();
+      final email = _emailController.text.trim();
+      final familyCode = _familyCodeController.text.trim();
+
+      await ref.read(userListNotifierProvider.notifier).addUser(
+            email,
+            displayName,
+            email,
+            familyCode,
+          );
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao salvar usuário: $e')),
+      );
+    } finally {
+      setState(() => _isSaving = false);
     }
-
-    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.user != null;
-
     return Scaffold(
-      appBar: AppBar(
-          title: Text(isEditing ? 'Editar Usuário' : 'Adicionar Usuário')),
+      appBar: AppBar(title: const Text('Adicionar Usuário')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
               TextFormField(
-                controller: _nameController,
+                controller: _displayNameController,
                 decoration: const InputDecoration(labelText: 'Nome'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Digite o nome' : null,
@@ -77,10 +70,20 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                   return null;
                 },
               ),
+              TextFormField(
+                controller: _familyCodeController,
+                decoration:
+                    const InputDecoration(labelText: 'Código da Família'),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Digite o código da família'
+                    : null,
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _save,
-                child: const Text('Salvar'),
+                onPressed: _isSaving ? null : _saveUser,
+                child: _isSaving
+                    ? const CircularProgressIndicator()
+                    : const Text('Salvar'),
               ),
             ],
           ),

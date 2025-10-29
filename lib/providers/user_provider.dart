@@ -1,29 +1,48 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import '../repositories/user_repository.dart';
 import '../models/user_model.dart';
-import 'package:uuid/uuid.dart';
+import 'package:riverpod/legacy.dart';
 
-final userListProvider =
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  return UserRepository();
+});
+
+final userListStreamProvider = StreamProvider<List<UserModel>>((ref) {
+  final repo = ref.watch(userRepositoryProvider);
+  return repo.getUsersStream();
+});
+
+final userListNotifierProvider =
     StateNotifierProvider<UserListNotifier, List<UserModel>>((ref) {
-  return UserListNotifier();
+  return UserListNotifier(ref);
 });
 
 class UserListNotifier extends StateNotifier<List<UserModel>> {
-  UserListNotifier() : super([]);
+  final Ref ref;
 
-  void addUser(String name, String email) {
-    var newUser = UserModel(id: const Uuid().v4(), name: name, email: email);
-    state = [...state, newUser];
+  UserListNotifier(this.ref) : super([]) {
+    _init();
   }
 
-  void updateUser(String id, String name, String email) {
-    state = [
-      for (final user in state)
-        if (user.id == id) user.copyWith(name: name, email: email) else user,
-    ];
+  void _init() {
+    // Escuta o StreamProvider e atualiza o estado ao receber os dados
+    ref.listen<AsyncValue<List<UserModel>>>(userListStreamProvider,
+        (previous, next) {
+      next.whenData((users) {
+        state = users;
+      });
+    });
   }
 
-  void deleteUser(String id) {
-    state = state.where((user) => user.id != id).toList();
+  Future<void> addUser(
+      String id, String displayName, String email, String familyCode) async {
+    final user = UserModel(
+      id: id,
+      displayName: displayName,
+      email: email,
+      familyCode: familyCode,
+      fcmTokens: [],
+    );
+    await ref.read(userRepositoryProvider).addUser(user);
   }
 }
