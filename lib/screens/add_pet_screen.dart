@@ -28,7 +28,9 @@ class _AddPetScreenState extends ConsumerState<AddPetScreen> {
   Future<void> _pickImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() => _pickedImage = picked);
+      setState(() {
+        _pickedImage = picked;
+      });
     }
   }
 
@@ -40,17 +42,21 @@ class _AddPetScreenState extends ConsumerState<AddPetScreen> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
-      final familyCode = 'BORGES01'; // Obter do usuário autenticado no app real
-      String? photoUrl;
+      final familyCode =
+          'BORGES01'; // TODO: Substituir por usuário autenticado real
 
+      String? photoUrl;
       if (_pickedImage != null) {
         final storageService = ref.read(storageServiceProvider);
         photoUrl = await storageService.uploadFile(
-            'pets/${DateTime.now().millisecondsSinceEpoch}.jpg',
-            File(_pickedImage!.path));
+          'pets/${DateTime.now().millisecondsSinceEpoch}.jpg',
+          File(_pickedImage!.path),
+        );
       }
 
       final newPet = Pet(
@@ -69,11 +75,13 @@ class _AddPetScreenState extends ConsumerState<AddPetScreen> {
 
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Erro ao salvar pet: $e'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao salvar pet: $e')),
+      );
     } finally {
-      setState(() => _isSubmitting = false);
+      setState(() {
+        _isSubmitting = false;
+      });
     }
   }
 
@@ -122,9 +130,11 @@ class _AddPetScreenState extends ConsumerState<AddPetScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(_birthDate == null
-                        ? 'Data de nascimento não selecionada'
-                        : 'Nascimento: ${_birthDate!.toLocal().toString().split(' ')[0]}'),
+                    child: Text(
+                      _birthDate == null
+                          ? 'Data de nascimento não selecionada'
+                          : 'Nascimento: ${_birthDate!.toLocal().toString().split(' ')[0]}',
+                    ),
                   ),
                   TextButton(
                     onPressed: () async {
@@ -134,7 +144,9 @@ class _AddPetScreenState extends ConsumerState<AddPetScreen> {
                         firstDate: DateTime(2000),
                         lastDate: DateTime.now(),
                       );
-                      if (date != null) setState(() => _birthDate = date);
+                      if (date != null) {
+                        setState(() => _birthDate = date);
+                      }
                     },
                     child: const Text('Selecionar Data'),
                   ),

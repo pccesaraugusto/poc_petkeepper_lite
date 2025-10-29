@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
+import '../models/pet_model.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -8,6 +9,23 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authService = ref.read(authServiceProvider);
+
+    // Exemplo pet para passar como argumento na navegação add_pet_task
+    final examplePet = Pet(
+      id: '1',
+      familyCode: 'BORGES01',
+      name: 'Rex',
+      species: 'Cachorro',
+      birthDate: DateTime(2020, 5, 20),
+      weightKg: 25.0,
+      photoUrl: null,
+      createdAt: DateTime.now(),
+    );
+
+    void navigateTo(String routeName, {Object? arguments}) {
+      Navigator.of(context).pop(); // Fecha o Drawer antes de navegar
+      Navigator.of(context).pushNamed(routeName, arguments: arguments);
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
@@ -17,37 +35,41 @@ class HomeScreen extends ConsumerWidget {
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                'Menu',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
+              child: Text('Menu',
+                  style: TextStyle(color: Colors.white, fontSize: 24)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.family_restroom),
+              title: const Text('Families'),
+              onTap: () => navigateTo('/families'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.task_alt),
+              title: const Text('Pet Tasks'),
+              onTap: () => navigateTo('/add_pet_task', arguments: examplePet),
+            ),
+            ListTile(
+              leading: const Icon(Icons.pets),
+              title: const Text('Pets'),
+              onTap: () => navigateTo('/add_pet'),
             ),
             ListTile(
               leading: const Icon(Icons.person),
-              title: const Text('Perfil'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/profile');
-              },
+              title: const Text('Users'),
+              onTap: () => navigateTo('/users'),
             ),
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Configurações'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/settings');
-              },
+              onTap: () => navigateTo('/settings'),
             ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Sair'),
               onTap: () async {
-                Navigator.of(context).pop(); // Fecha menu
-
-                await authService.signOut(); // Chama logout completo
-
-                Navigator.of(context)
-                    .pushReplacementNamed('/login'); // Vai para login
+                Navigator.of(context).pop();
+                await authService.signOut();
+                Navigator.of(context).pushReplacementNamed('/login');
               },
             ),
           ],

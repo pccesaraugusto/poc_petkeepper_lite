@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/facebook_auth_service.dart';
+import 'facebook_auth_service.dart';
 
 final facebookAuthServiceProvider = Provider<FacebookAuthService>((ref) {
   return FacebookAuthService();
@@ -30,20 +30,15 @@ class AuthService {
     if (accessToken == null) return null;
 
     final credential = FacebookAuthProvider.credential(accessToken.tokenString);
-
     final userCredential = await _auth.signInWithCredential(credential);
     return userCredential.user;
   }
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
   User? get currentUser => _auth.currentUser;
 
   Future<void> signOut() async {
-    // Logout do Firebase
     await _auth.signOut();
-
-    // Logout do Facebook
     await _facebookAuthService.signOut();
   }
 }
