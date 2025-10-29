@@ -37,7 +37,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         setState(() => _error = 'Falha no login');
       } else {
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/home'); // ✅ Navega para /home
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
       setState(() => _error = e.toString());
@@ -57,7 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         setState(() => _error = 'Falha no login com Facebook');
       } else {
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/home'); // ✅ Navega para /home
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
       setState(() => _error = e.toString());

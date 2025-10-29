@@ -1,35 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    try {
-      final facebookAuth = ref.read(facebookAuthServiceProvider);
-      await facebookAuth.signOut();
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro ao sair: $e')));
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.read(authServiceProvider);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('PetKeeper Lite - Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context, ref),
-          ),
-        ],
+      appBar: AppBar(title: const Text('Home')),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
+              child: Text(
+                'Menu',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Perfil'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed('/profile');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Configurações'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed('/settings');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sair'),
+              onTap: () async {
+                Navigator.of(context).pop(); // Fecha menu
+
+                await authService.signOut(); // Chama logout completo
+
+                Navigator.of(context)
+                    .pushReplacementNamed('/login'); // Vai para login
+              },
+            ),
+          ],
+        ),
       ),
-      body: const Center(child: Text('Bem-vindo ao PetKeeper Lite!')),
+      body: const Center(child: Text('Bem-vindo à Home')),
     );
   }
 }
