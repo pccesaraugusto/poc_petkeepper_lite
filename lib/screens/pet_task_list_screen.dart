@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/pet_task_provider.dart';
 import '../models/pet_model.dart';
-import '../models/pet_task_model.dart';
-import '../services/pet_task_service.dart';
 
-class PetTaskListScreen extends StatelessWidget {
+class PetTaskListScreen extends ConsumerWidget {
   final Pet pet;
   const PetTaskListScreen({super.key, required this.pet});
 
   @override
-  Widget build(BuildContext context) {
-    final petTaskService = PetTaskService();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasksAsyncValue = ref.watch(petTaskListProvider(pet.id));
 
     return Scaffold(
       appBar: AppBar(title: Text('Tarefas de ${pet.name}')),
-      body: StreamBuilder<List<PetTask>>(
-        stream: petTaskService.streamTasksForPet(pet.id),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final tasks = snapshot.data ?? [];
+      body: tasksAsyncValue.when(
+        data: (tasks) {
           if (tasks.isEmpty) {
             return const Center(child: Text('Nenhuma tarefa cadastrada.'));
           }
@@ -30,32 +25,47 @@ class PetTaskListScreen extends StatelessWidget {
               return ListTile(
                 title: Text(task.title),
                 subtitle: Text(
-                  'Tipo: ${task.type}, Vence: ${task.dueDate.toLocal().toIso8601String().substring(0, 10)}',
+                  'Tipo: ${task.type}, Vence: '
+                  '${task.dueDate.toLocal().toString().split(' ')[0]}',
                 ),
                 trailing: Checkbox(
                   value: task.done,
                   onChanged: (value) {
-                    petTaskService.updateTask(task.id, {
+                    ref.read(petTaskServiceProvider).updateTask(task.id, {
                       'done': value ?? false,
                     });
                   },
                 ),
                 onLongPress: () async {
-                  final confirm = await showConfirmDialog(
-                    context,
-                    'Excluir tarefa',
-                    'Deseja realmente excluir a tarefa "${task.title}"?',
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Excluir tarefa'),
+                      content: Text('Deseja excluir a tarefa "${task.title}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Confirmar'),
+                        ),
+                      ],
+                    ),
                   );
                   if (confirm == true) {
                     try {
-                      await petTaskService.deleteTask(task.id);
+                      await ref
+                          .read(petTaskServiceProvider)
+                          .deleteTask(task.id);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Tarefa removida')),
                       );
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Erro ao remover: $e')),
-                      );
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Erro: $e')));
                     }
                   }
                 },
@@ -63,6 +73,8 @@ class PetTaskListScreen extends StatelessWidget {
             },
           );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('Erro: $error')),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

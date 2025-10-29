@@ -1,54 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../models/pet_model.dart';
 import '../models/pet_task_model.dart';
 import '../providers/pet_task_provider.dart';
 
-class AddPetTaskScreen extends ConsumerStatefulWidget {
-  final Pet pet;
-  const AddPetTaskScreen({super.key, required this.pet});
+class EditPetTaskScreen extends ConsumerStatefulWidget {
+  final PetTask task;
+  const EditPetTaskScreen({super.key, required this.task});
 
   @override
-  ConsumerState<AddPetTaskScreen> createState() => _AddPetTaskScreenState();
+  ConsumerState<EditPetTaskScreen> createState() => _EditPetTaskScreenState();
 }
 
-class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
+class _EditPetTaskScreenState extends ConsumerState<EditPetTaskScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _notesController = TextEditingController();
-  String _type = 'vaccine';
-  DateTime? _dueDate;
+  late TextEditingController _titleController;
+  late TextEditingController _notesController;
+  late String _type;
+  late DateTime _dueDate;
+  bool _done = false;
   bool _isSubmitting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.task.title);
+    _notesController = TextEditingController(text: widget.task.notes);
+    _type = widget.task.type;
+    _dueDate = widget.task.dueDate;
+    _done = widget.task.done;
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _dueDate == null) {
+    if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Preencha todos os campos')));
+        const SnackBar(content: Text('Preencha corretamente os campos')),
+      );
       return;
     }
 
     setState(() => _isSubmitting = true);
 
-    final task = PetTask(
-      id: '',
-      petId: widget.pet.id,
-      type: _type,
-      title: _titleController.text.trim(),
-      dueDate: _dueDate!,
-      notes: _notesController.text.trim(),
-      createdBy: 'userId', // TODO buscar do auth real
-      createdAt: DateTime.now(),
-      done: false,
-    );
-
     try {
       final petTaskService = ref.read(petTaskServiceProvider);
-      await petTaskService.addTask(task);
+      final data = {
+        'type': _type,
+        'title': _titleController.text.trim(),
+        'notes': _notesController.text.trim(),
+        'dueDate': _dueDate,
+        'done': _done,
+      };
+      await petTaskService.updateTask(widget.task.id, data);
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Erro ao salvar tarefa: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao atualizar tarefa: $e')));
     } finally {
       setState(() => _isSubmitting = false);
     }
@@ -64,7 +70,7 @@ class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Nova Tarefa para ${widget.pet.name}')),
+      appBar: AppBar(title: const Text('Editar Vacina/Tarefa')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -76,10 +82,14 @@ class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
                 items: const [
                   DropdownMenuItem(value: 'vaccine', child: Text('Vacina')),
                   DropdownMenuItem(
-                      value: 'grooming', child: Text('Banho/Tosa')),
+                    value: 'grooming',
+                    child: Text('Banho/Tosa'),
+                  ),
                   DropdownMenuItem(value: 'other', child: Text('Outro')),
                 ],
-                onChanged: (val) => setState(() => _type = val!),
+                onChanged: (val) {
+                  if (val != null) setState(() => _type = val);
+                },
                 decoration: const InputDecoration(labelText: 'Tipo'),
               ),
               TextFormField(
@@ -95,30 +105,39 @@ class _AddPetTaskScreenState extends ConsumerState<AddPetTaskScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(_dueDate == null
-                        ? 'Data de vencimento não selecionada'
-                        : 'Vence em: ${_dueDate!.toLocal().toString().split(' ')[0]}'),
+                    child: Text(
+                      'Vence em: ${_dueDate.toLocal().toString().split(' ')[0]}',
+                    ),
                   ),
                   TextButton(
                     onPressed: () async {
                       final date = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now(),
+                        initialDate: _dueDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2100),
                       );
                       if (date != null) setState(() => _dueDate = date);
                     },
-                    child: const Text('Selecionar Data'),
+                    child: const Text('Alterar Data'),
                   ),
                 ],
+              ),
+              CheckboxListTile(
+                title: const Text('Concluído'),
+                value: _done,
+                onChanged: (bool? value) {
+                  setState(() {
+                    _done = value ?? false;
+                  });
+                },
               ),
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submit,
                 child: _isSubmitting
                     ? const CircularProgressIndicator()
-                    : const Text('Salvar'),
-              )
+                    : const Text('Salvar Alterações'),
+              ),
             ],
           ),
         ),

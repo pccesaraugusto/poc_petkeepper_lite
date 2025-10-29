@@ -1,19 +1,19 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/pet_model.dart';
-import '../services/pet_service.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../providers/pet_provider.dart';
 
-class EditPetScreen extends StatefulWidget {
+class EditPetScreen extends ConsumerStatefulWidget {
   final Pet pet;
   const EditPetScreen({super.key, required this.pet});
 
   @override
-  State<EditPetScreen> createState() => _EditPetScreenState();
+  ConsumerState<EditPetScreen> createState() => _EditPetScreenState();
 }
 
-class _EditPetScreenState extends State<EditPetScreen> {
+class _EditPetScreenState extends ConsumerState<EditPetScreen> {
   late TextEditingController _nameController;
   late TextEditingController _speciesController;
   late TextEditingController _weightController;
@@ -38,13 +38,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
     if (picked != null) setState(() => _pickedImage = picked);
   }
 
-  Future<String?> _uploadPhoto(String petId, XFile file) async {
-    final ref = FirebaseStorage.instance.ref().child('pet_photos/$petId.jpg');
-    await ref.putFile(File(file.path));
-    return await ref.getDownloadURL();
-  }
-
-  void _submit() async {
+  Future<void> _submit() async {
     if (_nameController.text.isEmpty ||
         _speciesController.text.isEmpty ||
         _weightController.text.isEmpty) {
@@ -56,28 +50,22 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      final petId = widget.pet.id;
+      final petService = ref.read(petServiceProvider);
       final data = {
         'name': _nameController.text.trim(),
         'species': _speciesController.text.trim(),
         'weightKg': double.parse(_weightController.text.trim()),
         'birthDate': _birthDate,
+        // 'photoUrl': manipular upload da foto no service se necessário
       };
 
-      if (_pickedImage != null) {
-        final photoUrl = await _uploadPhoto(petId, _pickedImage!);
-        data['photoUrl'] = photoUrl;
-      }
-
-      await PetService().updatePet(petId, data);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pet atualizado com sucesso')),
-      );
+      // Atualizar pet no Firestore
+      await petService.updatePet(widget.pet.id, data);
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      ).showSnackBar(SnackBar(content: Text('Erro ao atualizar pet: $e')));
     } finally {
       setState(() => _isSubmitting = false);
     }
@@ -95,9 +83,9 @@ class _EditPetScreenState extends State<EditPetScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Editar Pet')),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: ListView(
           children: [
             TextField(
               controller: _nameController,
@@ -114,8 +102,10 @@ class _EditPetScreenState extends State<EditPetScreen> {
             ),
             Row(
               children: [
-                Text(
-                  'Nascimento: ${_birthDate.toLocal().toString().split(' ')[0]}',
+                Expanded(
+                  child: Text(
+                    'Nascimento: ${_birthDate.toLocal().toString().split(' ')[0]}',
+                  ),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -131,12 +121,10 @@ class _EditPetScreenState extends State<EditPetScreen> {
                 ),
               ],
             ),
-            if (_pickedImage != null)
-              Image.file(File(_pickedImage!.path), height: 100),
             TextButton.icon(
+              onPressed: _pickImage,
               icon: const Icon(Icons.photo_library),
               label: const Text('Alterar Foto'),
-              onPressed: _pickImage,
             ),
             ElevatedButton(
               onPressed: _isSubmitting ? null : _submit,

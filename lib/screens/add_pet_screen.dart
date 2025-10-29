@@ -1,18 +1,21 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import '../models/pet_model.dart';
-import '../services/pet_service.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
-class AddPetScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:poc_petkeepper_lite/providers/storage_service_provider.dart';
+
+import '../models/pet_model.dart';
+import '../providers/pet_provider.dart';
+
+class AddPetScreen extends ConsumerStatefulWidget {
   const AddPetScreen({super.key});
 
   @override
-  State<AddPetScreen> createState() => _AddPetScreenState();
+  ConsumerState<AddPetScreen> createState() => _AddPetScreenState();
 }
 
-class _AddPetScreenState extends State<AddPetScreen> {
+class _AddPetScreenState extends ConsumerState<AddPetScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _speciesController = TextEditingController();
@@ -24,84 +27,104 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
   Future<void> _pickImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) setState(() => _pickedImage = picked);
+    if (picked != null) {
+      setState(() => _pickedImage = picked);
+    }
   }
 
-  Future<String?> _uploadPhoto(String petId, XFile file) async {
-    final ref = FirebaseStorage.instance.ref().child('pet_photos/$petId.jpg');
-    await ref.putFile(File(file.path));
-    return await ref.getDownloadURL();
-  }
-
-  void _submit() async {
-    if (!_formKey.currentState!.validate() || _birthDate == null) return;
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || _birthDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, preencha todos os campos')),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
+
     try {
-      final familyCode = "BORGES01"; // TODO obter do auth
-      final pet = Pet(
+      final familyCode = 'BORGES01'; // Obter do usuário autenticado no app real
+      String? photoUrl;
+
+      if (_pickedImage != null) {
+        final storageService = ref.read(storageServiceProvider);
+        photoUrl = await storageService.uploadFile(
+            'pets/${DateTime.now().millisecondsSinceEpoch}.jpg',
+            File(_pickedImage!.path));
+      }
+
+      final newPet = Pet(
         id: '',
         familyCode: familyCode,
         name: _nameController.text.trim(),
         species: _speciesController.text.trim(),
         birthDate: _birthDate!,
         weightKg: double.parse(_weightController.text.trim()),
-        photoUrl: null,
+        photoUrl: photoUrl,
         createdAt: DateTime.now(),
       );
 
-      final docRef = await PetService().petsCollection.add(pet.toMap());
-      if (_pickedImage != null) {
-        final photoUrl = await _uploadPhoto(docRef.id, _pickedImage!);
-        await docRef.update({'photoUrl': photoUrl});
-      }
+      final petService = ref.read(petServiceProvider);
+      await petService.addPet(newPet);
 
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Erro ao salvar pet: $e'),
+      ));
     } finally {
       setState(() => _isSubmitting = false);
     }
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _speciesController.dispose();
+    _weightController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Adicionar Pet')),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Nome'),
-                validator: (v) => v == null || v.isEmpty ? 'Obrigatório' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Campo obrigatório' : null,
               ),
               TextFormField(
                 controller: _speciesController,
                 decoration: const InputDecoration(labelText: 'Espécie'),
-                validator: (v) => v == null || v.isEmpty ? 'Obrigatório' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Campo obrigatório' : null,
               ),
               TextFormField(
                 controller: _weightController,
                 decoration: const InputDecoration(labelText: 'Peso (kg)'),
                 keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Obrigatório';
-                  if (double.tryParse(v) == null) return 'Número inválido';
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Campo obrigatório';
+                  if (double.tryParse(value) == null)
+                    return 'Digite um número válido';
                   return null;
                 },
               ),
               Row(
                 children: [
-                  Text(
-                    _birthDate == null
-                        ? 'Data de nascimento'
-                        : _birthDate!.toLocal().toString().split(' ')[0],
+                  Expanded(
+                    child: Text(_birthDate == null
+                        ? 'Data de nascimento não selecionada'
+                        : 'Nascimento: ${_birthDate!.toLocal().toString().split(' ')[0]}'),
                   ),
                   TextButton(
                     onPressed: () async {
@@ -118,11 +141,11 @@ class _AddPetScreenState extends State<AddPetScreen> {
                 ],
               ),
               if (_pickedImage != null)
-                Image.file(File(_pickedImage!.path), height: 100),
+                Image.file(File(_pickedImage!.path), height: 150),
               TextButton.icon(
+                onPressed: _pickImage,
                 icon: const Icon(Icons.photo_library),
                 label: const Text('Selecionar Foto'),
-                onPressed: _pickImage,
               ),
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submit,

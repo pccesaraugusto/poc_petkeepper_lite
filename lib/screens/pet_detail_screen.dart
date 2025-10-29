@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/pet_model.dart';
 import '../models/pet_task_model.dart';
 import '../services/pet_task_service.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
 class PetDetailScreen extends StatelessWidget {
   final Pet pet;

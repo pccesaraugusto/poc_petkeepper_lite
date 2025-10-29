@@ -1,16 +1,28 @@
-# poc_petkeepper_lite
 
-A new Flutter project.
+---
 
-## Getting Started
+## Boas Práticas
 
-This project is a starting point for a Flutter application.
+- **Models**: Definem os dados e métodos de serialização.
+- **Services**: Abstraem toda ligação com Firebase.
+- **Providers**: Isolam e expõem o estado da aplicação.
+- **Screens**: Implementam interfaces gráficas e chamam providers.
+- **Widgets**: Componentes UI compartilhados.
+- **Utils**: Funções que podem ser usadas em várias partes do app.
+- **Functions**: Backend sem servidor para notificações.
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Como contribuir
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Mantenha cada responsabilidade no local correto.
+- Use nomes claros e consistentes.
+- Escreva testes para novos features no diretório `test/`.
+- Atualize documentação quando adicionar pastas ou arquivos críticos.
+
+---
+
+Com esta estrutura, o PetKeeper Lite mantém organizado seu fluxo de desenvolvimento e facilita escalabilidade e colaboração.
+
+---
+
